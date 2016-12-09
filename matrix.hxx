@@ -2,8 +2,10 @@
 #define MATRIX_HXX
 
 #include "concepts.hxx"
-#include <iostream>
+#include "exceptions.hxx"
 #include <vector>
+
+using std::size_t;
 
 template <Number T>
 class Matrix {
@@ -12,20 +14,23 @@ class Matrix {
 
   public:
     Matrix() = default;
-    Matrix(int, int);
+    Matrix(const size_t, const size_t);
+    Matrix(const std::vector<std::vector<T>>&);
     Matrix(const Matrix<T>&);
     Matrix(Matrix<T>&&);
     Matrix<T>& operator=(const Matrix<T>&);
     Matrix<T>& operator=(Matrix<T>&&);
 
-    void resize(int, int);
+    void resize(const size_t, const size_t);
     size_t rows() const;
     size_t cols() const;
     void set_all(const int);
-    std::vector<T>& operator[](const int);
-    const std::vector<T>& operator[](const int) const;
+    T& at(const size_t, const size_t);
+    const T& at(const size_t, const size_t) const;
     Matrix<T>& operator+=(const Matrix<T>&);
     Matrix<T>& operator-=(const Matrix<T>&);
+    Matrix<T>& operator*=(const Number);
+    Matrix<T> operator*(const Matrix<T>&);
 };
 
 template <Number T>
@@ -38,14 +43,31 @@ template <Number T>
 Matrix<T> operator+(const Matrix<T>&, const Matrix<T>&);
 template <Number T>
 Matrix<T> operator-(const Matrix<T>&, const Matrix<T>&);
+template <Number T>
+Matrix<T> operator*(const Matrix<T>&, const Number);
+template <Number T>
+Matrix<T> operator*(const Number, const Matrix<T>&);
 
 
 /* Definitions */
 
 /* Ctor */
 template <Number T>
-Matrix<T>::Matrix(int rows, int cols) {
+Matrix<T>::Matrix(const size_t rows, const size_t cols) {
   resize(rows, cols);
+}
+
+template <Number T>
+Matrix<T>::Matrix(const std::vector<std::vector<T>>& vec) {
+  if (vec.size() != 0) {
+    size_t dim = vec[0].size();
+    for (auto& row : vec) {
+      if (row.size() != dim) {
+        throw jagged_matrix();
+      }
+    }
+  }
+  data = vec;
 }
 
 /* Copy constructor */
@@ -55,7 +77,7 @@ Matrix<T>::Matrix(const Matrix<T>& mat) {
 
   for (size_t i = 0; i < mat.rows(); ++i) {
     for (size_t j = 0; j < mat.cols(); ++j) {
-      data[i][j] = mat[i][j];
+      this->at(i, j) = mat.at(i, j);
     }
   }
 }
@@ -67,7 +89,7 @@ Matrix<T>::Matrix(Matrix<T>&& mat) {
   
   for (size_t i = 0; i < mat.rows(); ++i) {
     for (size_t j = 0; j < mat.cols(); ++j) {
-      data[i][j] = std::move(mat[i][j]);
+      this->at(i, j) = std::move(mat.at(i, j));
     }
   }
 }
@@ -79,7 +101,7 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& mat) {
 
   for (size_t i = 0; i < mat.rows(); ++i) {
     for (size_t j = 0; j < mat.cols(); ++j) {
-      data[i][j] = mat[i][j];
+      this->at(i, j) = mat.at(i, j);
     }
   }
 
@@ -93,7 +115,7 @@ Matrix<T>& Matrix<T>::operator=(Matrix<T>&& mat) {
 
   for (size_t i = 0; i < mat.rows(); ++i) {
     for (size_t j = 0; j < mat.cols(); ++j) {
-      data[i][j] = std::move(mat[i][j]);
+      this->at(i, j) = std::move(mat.at(i, j));
     }
   }
 
@@ -102,7 +124,7 @@ Matrix<T>& Matrix<T>::operator=(Matrix<T>&& mat) {
 
 
 template <Number T>
-void Matrix<T>::resize(int rows, int cols) {
+void Matrix<T>::resize(const size_t rows, const size_t cols) {
   data.resize(rows);
 
   for (auto& row : data) {
@@ -127,26 +149,29 @@ template <Number T>
 void Matrix<T>::set_all(const int n) {
   for (size_t i = 0; i < rows(); ++i) {
     for (size_t j = 0; j < cols(); ++j) {
-      data[i][j] = n;
+      this->at(i, j) = n;
     }
   }
 }
 
 template <Number T>
-std::vector<T>& Matrix<T>::operator[](const int i) {
-  return data[i];
+T& Matrix<T>::at(const size_t i, const size_t j) {
+  return data.at(i).at(j);
 }
 
 template <Number T>
-const std::vector<T>& Matrix<T>::operator[](const int i) const {
-  return data[i];
+const T& Matrix<T>::at(const size_t i, const size_t j) const {
+  return data.at(i).at(j);
 }
 
 template <Number T>
 Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& a) {
+  if (a.rows() != rows() || a.cols() != cols()) {
+    throw size_difference();
+  }
   for (size_t i = 0; i < a.rows(); ++i) {
     for (size_t j = 0; j < a.cols(); ++j) {
-      data[i][j] += a[i][j];
+      this->at(i, j) += a.at(i, j);
     }
   }
 
@@ -155,13 +180,47 @@ Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& a) {
 
 template <Number T>
 Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& a) {
+  if (a.rows() != rows() || a.cols() != cols()) {
+    throw size_difference();
+  }
   for (size_t i = 0; i < a.rows(); ++i) {
     for (size_t j = 0; j < a.cols(); ++j) {
-      data[i][j] -= a[i][j];
+      this->at(i, j) -= a.at(i, j);
     }
   }
 
   return *this;
+}
+
+template <Number T>
+Matrix<T>& Matrix<T>::operator*=(const Number num) {
+  for (size_t i = 0; i < rows(); ++i) {
+    for (size_t j = 0; j < cols(); ++j) {
+      this->at(i, j) *= num;
+    }
+  }
+  return *this;
+}
+
+template <Number T>
+Matrix<T> Matrix<T>::operator*(const Matrix<T>& b) {
+  if (this->cols() != b.rows()) {
+    throw row_col_difference();
+  }
+  int sum;
+  Matrix<T> result(this->rows(), b.cols());
+
+  for (size_t i = 0; i < result.rows(); ++i) {
+    for (size_t j = 0; j < result.cols(); ++j) {
+      sum = 0;
+      for (size_t k = 0; k < this->cols(); ++k) {
+        sum += this->at(i, k) + b.at(k, j);
+      }
+      result.at(i, j) = sum;
+    }
+  }
+
+  return result;
 }
 
 /* Non-member operator overloads */
@@ -173,7 +232,7 @@ bool operator==(const Matrix<T>& a, const Matrix<T>& b) {
 
   for (size_t i = 0; i < a.rows(); ++i) {
     for (size_t j = 0; j < a.cols(); ++j) {
-      if (a[i][j] != b[i][j]) {
+      if (a.at(i, j) != b.at(i, j)) {
         return false;
       }
     }
@@ -198,7 +257,7 @@ Matrix<T> operator-(const Matrix<T>& a) {
 
   for (size_t i = 0; i < result.rows(); ++i) {
     for (size_t j = 0; j < result.cols(); ++j) {
-      result[i][j] *= -1;
+      result.at(i, j) *= -1;
     }
   }
 
@@ -209,6 +268,18 @@ template <Number T>
 Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b) {
   Matrix<T> result = a;
   return result -= b;
+}
+
+template <Number T>
+Matrix<T> operator*(const Matrix<T>& mat, const Number num) {
+  Matrix<T> result = mat;
+  return result *= num;
+}
+
+template <Number T>
+Matrix<T> operator*(const Number num, const Matrix<T>& mat) {
+  Matrix<T> result = mat;
+  return result *= num;
 }
 
 #endif

@@ -31,7 +31,7 @@ namespace {
     mat.set_all(2);
     for (size_t i = 0; i < mat.rows(); ++i) {
       for (size_t j = 0; j < mat.cols(); ++j) {
-        ASSERT_EQ(2, mat[i][j]);
+        ASSERT_EQ(2, mat.at(i, j));
       }
     }
   }
@@ -44,6 +44,14 @@ namespace {
     mat2.set_all(2);
 
     Matrix<int> temp = mat + mat2;
+    
+    Matrix<int> fail(3,4);
+
+    EXPECT_THROW(fail += temp, size_difference);
+    EXPECT_THROW(fail -= temp, size_difference);
+    EXPECT_NO_THROW(fail *= 2);
+    EXPECT_NO_THROW(fail *= 2.0);
+    EXPECT_NO_THROW(fail *= 'c');
 
     ASSERT_NO_THROW(mat += mat2);
     EXPECT_EQ(temp, mat);
@@ -53,8 +61,18 @@ namespace {
     ASSERT_NO_THROW(mat -= temp);
     EXPECT_EQ(mat, mat2);
 
-    EXPECT_NO_THROW(mat[0][0] = 1);
-    EXPECT_NO_THROW(mat[0][0]);
+    mat.set_all(2);
+    mat2.set_all(4);
+    mat *= 2;
+    EXPECT_EQ(mat, mat2);
+  }
+
+  TEST_F(MatrixTest, atWorks) {
+    mat.resize(1,1);
+    EXPECT_NO_THROW(mat.at(0, 0) = 1);
+    EXPECT_NO_THROW(mat.at(0, 0));
+    EXPECT_ANY_THROW(mat.at(10, 0));
+    EXPECT_ANY_THROW(mat.at(0, 100));
   }
 
   TEST_F(MatrixTest, constructorsWork) {
@@ -64,12 +82,20 @@ namespace {
     mat.set_all(3);
     mat2.set_all(5);
     Matrix<int> temp;
+    std::vector<std::vector<int>> vec = {{1, 2},{3,4},{5,6}};
 
     EXPECT_NO_THROW(temp = mat2);
     EXPECT_EQ(temp, mat2);
     EXPECT_NO_THROW(temp = std::move(mat));
     EXPECT_NO_THROW(Matrix<int> m4(mat2));
     EXPECT_NO_THROW(Matrix<int> m4(std::move(mat2)));
+    EXPECT_NO_THROW(Matrix<int> m4(temp));
+    Matrix<int> m4(vec);
+    EXPECT_EQ(3, m4.rows());
+    EXPECT_EQ(2, m4.cols());
+    vec = {{1,2}, {3,4}, {5,6,7}};
+
+    EXPECT_THROW(Matrix<int> m5(vec), jagged_matrix);
   }
 }
 

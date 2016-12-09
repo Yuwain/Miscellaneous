@@ -1,5 +1,5 @@
-#ifndef TEST_H
-#define TEST_H
+#ifndef CONCEPTS_H
+#define CONCEPTS_H
 
 template <typename T>
 concept bool Number = requires(T a, T b) {
