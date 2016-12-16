@@ -30,7 +30,7 @@ class Matrix {
     Matrix<T>& operator+=(const Matrix<T>&);
     Matrix<T>& operator-=(const Matrix<T>&);
     Matrix<T>& operator*=(const Number);
-    Matrix<T> operator*(const Matrix<T>&);
+    Matrix<T> operator*(const Matrix<T>&) const;
 };
 
 template <Number T>
@@ -44,9 +44,9 @@ Matrix<T> operator+(const Matrix<T>&, const Matrix<T>&);
 template <Number T>
 Matrix<T> operator-(const Matrix<T>&, const Matrix<T>&);
 template <Number T>
-Matrix<T> operator*(const Matrix<T>&, const Number);
+Matrix<T> operator*(const Matrix<T>&, const T);
 template <Number T>
-Matrix<T> operator*(const Number, const Matrix<T>&);
+Matrix<T> operator*(const T, const Matrix<T>&);
 
 
 /* Definitions */
@@ -203,7 +203,7 @@ Matrix<T>& Matrix<T>::operator*=(const Number num) {
 }
 
 template <Number T>
-Matrix<T> Matrix<T>::operator*(const Matrix<T>& b) {
+Matrix<T> Matrix<T>::operator*(const Matrix<T>& b) const {
   if (this->cols() != b.rows()) {
     throw row_col_difference();
   }
@@ -214,12 +214,11 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& b) {
     for (size_t j = 0; j < result.cols(); ++j) {
       sum = 0;
       for (size_t k = 0; k < this->cols(); ++k) {
-        sum += this->at(i, k) + b.at(k, j);
+        sum += this->at(i, k) * b.at(k, j);
       }
       result.at(i, j) = sum;
     }
   }
-
   return result;
 }
 
@@ -271,13 +270,13 @@ Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b) {
 }
 
 template <Number T>
-Matrix<T> operator*(const Matrix<T>& mat, const Number num) {
+Matrix<T> operator*(const Matrix<T>& mat, const T num) {
   Matrix<T> result = mat;
   return result *= num;
 }
 
 template <Number T>
-Matrix<T> operator*(const Number num, const Matrix<T>& mat) {
+Matrix<T> operator*(const T num, const Matrix<T>& mat) {
   Matrix<T> result = mat;
   return result *= num;
 }

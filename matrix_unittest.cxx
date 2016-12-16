@@ -36,7 +36,7 @@ namespace {
     }
   }
 
-  TEST_F(MatrixTest, operatorsWork) {
+  TEST_F(MatrixTest,sWork) {
     mat.resize(1,4);
     mat2 = mat;
 
@@ -82,7 +82,7 @@ namespace {
     mat.set_all(3);
     mat2.set_all(5);
     Matrix<int> temp;
-    std::vector<std::vector<int>> vec = {{1, 2},{3,4},{5,6}};
+    std::vector<std::vector<int>> vec = {{1, 2}, {3, 4}, {5, 6}};
 
     EXPECT_NO_THROW(temp = mat2);
     EXPECT_EQ(temp, mat2);
@@ -96,6 +96,20 @@ namespace {
     vec = {{1,2}, {3,4}, {5,6,7}};
 
     EXPECT_THROW(Matrix<int> m5(vec), jagged_matrix);
+  }
+
+  TEST_F(MatrixTest, matrixMult) {
+    std::vector<std::vector<int>> v1{{1, 1, 3}, {2, 1, 4}, {1, 2, 0}}, 
+                                  v2{{3, 2}, {1, 4}, {0, 3}},
+                                  v3{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    std::vector<std::vector<int>> ans{{4, 15}, {7, 20}, {5, 10}};
+
+    Matrix<int> m1{v1}, m2{v2}, m3{v3}, mans{ans};
+
+    EXPECT_TRUE(m1 * m2 == mans);
+    EXPECT_THROW(m2 * m1, row_col_difference);
+    EXPECT_TRUE(m1 * m3 == m1);
+    EXPECT_TRUE(m1 * m3 == m3 * m1);
   }
 }
 
@@ -136,6 +150,14 @@ TEST(nonMemberOPs, negative) {
 
   m2.set_all(0);
   EXPECT_EQ(m2, -m2);
+}
+
+TEST(nonMemberOPs, multiplication) {
+  Matrix<int> m1(3, 4), m2(3, 4);
+  m1.set_all(2);
+  m2.set_all(4);
+  EXPECT_EQ(m1*2, m2);
+  EXPECT_EQ(2*m1, m2);
 }
 
 int main(int argc, char **argv) {
